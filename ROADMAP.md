@@ -187,13 +187,32 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 
 ## 5. À faire — Prochaines priorités
 
-1. [🔄] Valider le layout du bottom panel (choisir parmi A/C/D/E)
-2. [🔄] Corriger l'interaction sous-scores ↔ profil altimétrique
-3. [ ] Persistance des itinéraires importés (IndexedDB)
-4. [ ] Donnée "provisoire" depuis ON3V/RVM (indicateur 2)
-5. [ ] Export PDF du tableau de classement par étape
-6. [ ] Export image de la carte avec les scores
-7. [ ] Lien partageable avec filtres en paramètres URL
-8. [ ] Filtre par revêtement et par score (slider)
-9. [ ] Marqueurs ponctuels sur la carte (pics, changements de voie)
-10. [ ] Coloration continue du tracé (par pente ou par type de voie)
+### 5.1 En cours / À valider
+1. [🔄] Valider le layout du bottom panel (choisir parmi A/C/D/E dans test-layouts.html)
+2. [🔄] Corriger l'interaction sous-scores ↔ profil altimétrique (erreurs de rendu)
+
+### 5.2 Mode plein écran
+- [ ] Bouton toggle pour masquer/afficher le panneau latéral de droite
+- [ ] En mode plein écran : le bandeau détail s'étend sur toute la largeur de la carte
+- [ ] Envisager un mode bandeau vertical (panneau latéral gauche) comme alternative au bandeau bas
+- [ ] Adapter le profil altimétrique à la nouvelle largeur/hauteur selon le mode
+
+### 5.3 Navigation entre étapes
+- [ ] Boutons précédent / suivant dans ou au-dessus du bandeau détail
+- [ ] Permettent de passer d'une étape à l'autre sans cliquer sur la carte ni scroller le sidebar
+- [ ] Indispensable en mode plein écran (le sidebar étant masqué)
+- [ ] La carte se recentre et le profil se met à jour automatiquement
+
+### 5.4 Données
+- [ ] Persistance des itinéraires importés (IndexedDB)
+- [ ] Donnée "provisoire" depuis ON3V/RVM (indicateur 2)
+
+### 5.5 Exports
+- [ ] Export PDF du tableau de classement par étape
+- [ ] Export image de la carte avec les scores
+- [ ] Lien partageable avec filtres en paramètres URL
+
+### 5.6 Filtres & carte
+- [ ] Filtre par revêtement et par score (slider)
+- [ ] Marqueurs ponctuels sur la carte (pics, changements de voie)
+- [ ] Coloration continue du tracé (par pente ou par type de voie)
