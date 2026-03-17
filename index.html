@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotation des parcours vélo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Cotation des parcours vélo</h1>
+      <div id="header-actions">
+        <select id="itinerary-selector" onchange="switchItinerary(this.value)">
+          <option value="velodyssee" selected>La Vélodyssée</option>
+        </select>
+        <button id="btn-add-itinerary" onclick="openImportModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+          Ajouter un itinéraire
+        </button>
+        <button id="btn-legend" onclick="openLegendModal()" title="Comprendre la cotation">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          <span>Cotation</span>
+        </button>
+        <button id="theme-toggle" onclick="toggleTheme()" title="Basculer light/dark mode">
+          <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path><path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path><path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+          <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div id="map-container">
+        <div id="map"></div>
+        <div id="basemap-selector"></div>
+      </div>
+      <aside id="sidebar">
+        <div id="route-info" class="hidden">
+          <h2 id="route-name">—</h2>
+          <div class="stats-row">
+            <div class="stat-mini"><strong id="total-distance">—</strong><span>Distance</span></div>
+            <div class="stat-mini"><strong id="num-stages">—</strong><span>Étapes</span></div>
+            <div class="stat-mini"><strong id="pct-propre">—</strong><span>Site propre</span></div>
+          </div>
+
+          <!-- Toggle principal : Étapes / Régions / Départements -->
+          <div id="main-toggle">
+            <button class="main-toggle-btn active" data-panel="etapes">Étapes</button>
+            <button class="main-toggle-btn" data-panel="regions">Régions</button>
+            <button class="main-toggle-btn" data-panel="departements">Départements</button>
+          </div>
+
+          <!-- Sous-toggle étapes (visible si panel = etapes) -->
+          <div id="sub-toggle">
+            <button class="view-btn active" data-view="10km">Tranches 10 km</button>
+            <button class="view-btn" data-view="touristique">Étapes touristiques</button>
+          </div>
+
+          <!-- Comparaison (visible si étapes touristiques) -->
+          <div id="comparison-bar" class="hidden">
+            <button id="btn-open-audit" onclick="openComparisonModal()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/></svg>
+              Comparer avec la cotation actuelle
+            </button>
+          </div>
+
+          <!-- Filtres (visible si panel = etapes) -->
+          <div id="filters">
+            <div class="filter-group">
+              <label>Niveau</label>
+              <div class="filter-chips" id="filter-category">
+                <button class="chip active" data-value="all">Tous</button>
+                <button class="chip chip-debute" data-value="debute">Je débute</button>
+                <button class="chip chip-habitude" data-value="habitude">J'ai l'habitude</button>
+                <button class="chip chip-aventure" data-value="aventure">Aventure</button>
+              </div>
+            </div>
+            <div class="filter-group" id="filter-region-group">
+              <label>Région</label>
+              <select id="filter-region">
+                <option value="all">Toutes les régions</option>
+              </select>
+            </div>
+            <div class="filter-group" id="filter-dept-group">
+              <label>Département</label>
+              <select id="filter-dept">
+                <option value="all">Tous les départements</option>
+              </select>
+            </div>
+            <div class="filter-count"><span id="filter-result-count">0</span> étapes affichées</div>
+          </div>
+
+          <div id="legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span> Je débute (0-2)</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> J'ai l'habitude (3-6)</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span> Aventure (7+)</div>
+          </div>
+
+          <!-- Contenu dynamique : étapes ou territoires -->
+          <div id="territory-list"></div>
+
+          <div id="stages-list">
+            <ul id="stages-ul"></ul>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Crédit -->
+  <div id="app-credit">Développé par Corentin NIORT</div>
+
+  <!-- Panel bas-gauche pour le détail d'une étape -->
+  <div id="bottom-panel">
+    <button class="panel-close" onclick="closeBottomPanel()">&times;</button>
+    <div class="panel-main">
+      <div id="panel-donut"></div>
+      <div class="panel-info" id="panel-info"></div>
+      <div class="panel-subscores" id="panel-subscores"></div>
+    </div>
+  </div>
+
+
+  <!-- Modale Ajout d'itinéraire -->
+  <div id="import-modal" class="modal-overlay" onclick="closeImportModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeImportModal()">&times;</button>
+
+      <h2>Ajouter un itinéraire</h2>
+      <p class="modal-intro">Renseignez les informations de l'itinéraire et importez les fichiers nécessaires à l'analyse.</p>
+
+      <div class="import-form">
+        <!-- Nom -->
+        <div class="form-group">
+          <label for="import-name">Nom de l'itinéraire</label>
+          <input type="text" id="import-name" placeholder="Ex : La Vélodyssée, La Loire à Vélo...">
+        </div>
+
+        <!-- URL du site -->
+        <div class="form-group">
+          <label for="import-url">URL du site officiel</label>
+          <div class="input-with-action">
+            <input type="url" id="import-url" placeholder="https://www.lavelodyssee.com/itineraire">
+            <button id="btn-scrape" onclick="scrapeItinerary()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+              Récupérer les étapes
+            </button>
+          </div>
+          <p class="form-hint">L'outil récupère automatiquement les étapes et leurs niveaux de difficulté depuis le site.</p>
+        </div>
+
+        <!-- Résultat du scraping -->
+        <div id="scrape-result" class="hidden">
+          <div id="scrape-status"></div>
+          <div id="scrape-preview"></div>
+        </div>
+
+        <!-- Fichiers -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tracé de l'itinéraire (.geojson) <span class="form-required">requis</span></label>
+            <p class="form-hint">Contient le tracé et ses caractéristiques : type de voie, revêtement, département, région. Permet de calculer le score de sécurité.</p>
+          </div>
+          <div class="form-group">
+            <label>Tracé avec altitude (.gpx) <span class="form-optional">recommandé</span></label>
+            <p class="form-hint">Contient l'altitude de chaque point. Permet de calculer le dénivelé, les montées et les pentes. Sans ce fichier, seul le score de sécurité sera disponible.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="file-drop" id="drop-geojson">
+            <input type="file" accept=".geojson,.json" onchange="handleImportFile(this, 'geojson')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span class="file-drop-text">Choisir un fichier .geojson</span>
+          </label>
+          <label class="file-drop" id="drop-gpx">
+            <input type="file" accept=".gpx" onchange="handleImportFile(this, 'gpx')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span class="file-drop-text">Choisir un fichier .gpx</span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="closeImportModal()">Annuler</button>
+          <button class="btn-primary" id="btn-launch-analysis" onclick="launchAnalysis()">Lancer l'analyse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Audit de comparaison -->
+  <div id="comparison-modal" class="modal-overlay" onclick="closeComparisonModal(event)">
+    <div class="modal-content modal-wide" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeComparisonModal()">&times;</button>
+
+      <h2>Audit de cotation — Comparaison</h2>
+      <p class="modal-intro">
+        Comparaison entre la cotation actuellement publiée sur le site de l'itinéraire
+        et la nouvelle cotation calculée selon la grille FVT.
+      </p>
+
+      <div class="audit-summary">
+        <div class="audit-kpi">
+          <strong class="audit-total">0</strong>
+          <span>étapes analysées</span>
+        </div>
+        <div class="audit-kpi audit-kpi-unchanged">
+          <strong class="audit-unchanged">0</strong>
+          <span>inchangées</span>
+        </div>
+        <div class="audit-kpi audit-kpi-upgraded">
+          <strong class="audit-upgraded">0</strong>
+          <span>facilitées</span>
+        </div>
+        <div class="audit-kpi audit-kpi-downgraded">
+          <strong class="audit-downgraded">0</strong>
+          <span>durcies</span>
+        </div>
+        <button id="btn-export-csv" onclick="exportComparison()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Exporter CSV
+        </button>
+      </div>
+
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Étape</th>
+            <th>Distance</th>
+            <th>Cotation actuelle</th>
+            <th></th>
+            <th>Nouvelle cotation</th>
+            <th>Évolution</th>
+          </tr>
+        </thead>
+        <tbody class="audit-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modale Légende / Cotation -->
+  <div id="legend-modal" class="modal-overlay" onclick="closeLegendModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeLegendModal()">&times;</button>
+
+      <h2>Système de cotation de la difficulté</h2>
+      <p class="modal-intro">
+        Cette cotation s'appuie sur la grille officielle de <strong>France Vélo Tourisme</strong>,
+        conçue pour harmoniser l'évaluation de la difficulté des itinéraires vélo en France.
+        Chaque itinéraire est découpé en <strong>tranches de 10 km</strong>, analysées individuellement
+        selon 5 indicateurs.
+      </p>
+
+      <h3>Les 5 indicateurs</h3>
+      <div class="modal-grid">
+        <div class="modal-indicator">
+          <div class="modal-indicator-header">
+            <span class="modal-indicator-num">1</span>
+            <span class="modal-indicator-title">Sécurité</span>
+          </div>
+          <p class="modal-indicator-desc">Pourcentage de voies cyclables sécurisées (site propre, hors bandes cyclables).</p>
+          <table class="modal-table">
+            <tr><td>+90%</td><td class="pts pts-0">0 pt</td></tr>
+            <tr><td>60 – 90%</td><td class="pts pts-1">1 pt</td></tr>
+            <tr><td>20 – 60%</td><td class="pts pts-2">2 pts</td></tr>
+            <tr><td>&lt; 20%</td><td class="pts pts-3">3 pts</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-indicator">
+          <div class="modal-indicator-header">
+            <span class="modal-indicator-num">2</span>
+            <span class="modal-indicator-title">Provisoire</span>
+          </div>
+          <p class="modal-indicator-desc">Pourcentage de sections provisoires sur le tracé.</p>
+          <table class="modal-table">
+            <tr><td>0%</td><td class="pts pts-0">0 pt</td></tr>
+            <tr><td>0,1 – 20%</td><td class="pts pts-1">1 pt</td></tr>
+            <tr><td>20 – 50%</td><td class="pts pts-2">2 pts</td></tr>
+            <tr><td>&gt; 50%</td><td class="pts pts-3">3 pts</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-indicator">
+          <div class="modal-indicator-header">
+            <span class="modal-indicator-num">3</span>
+            <span class="modal-indicator-title">Relief</span>
+          </div>
+          <p class="modal-indicator-desc">Dénivelé positif cumulé par tranche de 10 km.</p>
+          <table class="modal-table">
+            <tr><td>0 – 100 m</td><td class="pts pts-0">0 pt</td></tr>
+            <tr><td>100 – 200 m</td><td class="pts pts-1">1 pt</td></tr>
+            <tr><td>200 – 400 m</td><td class="pts pts-2">2 pts</td></tr>
+            <tr><td>&gt; 400 m</td><td class="pts pts-3">3 pts</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-indicator">
+          <div class="modal-indicator-header">
+            <span class="modal-indicator-num">4</span>
+            <span class="modal-indicator-title">Pics</span>
+          </div>
+          <p class="modal-indicator-desc">Nombre de montées avec une pente supérieure à 4%.</p>
+          <table class="modal-table">
+            <tr><td>0 – 1 pic</td><td class="pts pts-0">0 pt</td></tr>
+            <tr><td>2 – 3 pics</td><td class="pts pts-1">1 pt</td></tr>
+            <tr><td>4 – 5 pics</td><td class="pts pts-2">2 pts</td></tr>
+            <tr><td>&gt; 5 pics</td><td class="pts pts-3">3 pts</td></tr>
+          </table>
+        </div>
+
+        <div class="modal-indicator modal-indicator-small">
+          <div class="modal-indicator-header">
+            <span class="modal-indicator-num">5</span>
+            <span class="modal-indicator-title">Pente</span>
+          </div>
+          <p class="modal-indicator-desc">Pourcentage de pente des pics détectés.</p>
+          <table class="modal-table">
+            <tr><td>&lt; 4%</td><td class="pts pts-0">0 pt</td></tr>
+            <tr><td>4 – 6%</td><td class="pts pts-1">0,25 pt</td></tr>
+            <tr><td>&gt; 8%</td><td class="pts pts-2">0,5 pt</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <h3>Classement final</h3>
+      <p class="modal-intro">Le score total est la somme des 5 indicateurs. Plus le score est bas, plus le parcours est accessible.</p>
+      <div class="modal-categories">
+        <div class="modal-cat modal-cat-debute">
+          <div class="modal-cat-score">0 – 2 pts</div>
+          <div class="modal-cat-label">Je débute</div>
+          <div class="modal-cat-desc">Parcours accessible, majoritairement plat et sécurisé. Mention <strong>Famille</strong> si plus de 90% de voies cyclables.</div>
+        </div>
+        <div class="modal-cat modal-cat-habitude">
+          <div class="modal-cat-score">3 – 6 pts</div>
+          <div class="modal-cat-label">J'ai l'habitude</div>
+          <div class="modal-cat-desc">Parcours avec un peu de relief ou des portions en voie partagée. Une expérience du vélo est recommandée.</div>
+        </div>
+        <div class="modal-cat modal-cat-aventure">
+          <div class="modal-cat-score">7+ pts</div>
+          <div class="modal-cat-label">Aventure</div>
+          <div class="modal-cat-desc">Parcours exigeant avec du dénivelé significatif, des pentes raides ou un faible taux de voies sécurisées.</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <p>Méthodologie : <strong>France Vélo Tourisme</strong> — Actualisation des cotations de difficulté des parcours (V3)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+  <script src="src/gpx-parser.js"></script>
+  <script src="src/scoring.js"></script>
+  <script src="src/donuts.js"></script>
+  <script src="src/map.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
