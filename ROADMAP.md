@@ -8,6 +8,7 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 
 ## Légende des statuts
 - [x] Fait
+- [🔄] En cours / À valider
 - [ ] À faire
 - [⏸️] En attente (donnée ou décision manquante)
 
@@ -85,6 +86,7 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 - [x] Scores par territoire (régions et départements) avec donuts et barres de répartition
 - [x] Territoires toujours calculés sur les tranches 10 km (cohérence FVT)
 - [x] Bandeau informatif fermable précisant la base de calcul
+- [x] Clic territoire → zoom + highlight du territoire sur la carte
 
 ### 3.2 Filtres
 - [x] Filtre par catégorie (Je débute / J'ai l'habitude / Aventure)
@@ -105,7 +107,7 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 ### 3.4 Multi-itinéraires
 - [x] Modale d'ajout d'itinéraire (nom, URL, GeoJSON, GPX)
 - [x] Scraping automatique des étapes et niveaux depuis l'URL
-- [x] Sélecteur d'itinéraire dans le header pour basculer entre les itinéraires
+- [x] Sélecteur d'itinéraire dans le header pour basculer
 - [x] Stockage en mémoire (itineraryDB)
 - [ ] Persistance des itinéraires importés (localStorage / IndexedDB)
 
@@ -113,10 +115,19 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 - [x] Leaflet avec fond adaptatif dark/light
 - [x] Sélecteur de fond de carte : Sobre (CARTO), OSM, CyclOSM, Satellite
 - [x] Tronçons colorés par score (vert/orange/rouge)
-- [x] Clic étape → atténuation des autres tronçons + zoom
-- [x] Clic territoire → focus et highlight du territoire
-- [x] Bottom panel avec score total, sous-scores en donuts, KPIs en capsules avec icônes Lucide
+- [x] Clic étape → atténuation des autres tronçons (25%) + zoom
+- [x] Clic territoire → focus et highlight du territoire (25%)
 - [x] Restauration de l'opacité à la fermeture du panel
+
+### 3.6 Profil altimétrique
+- [x] Profil altimétrique interactif (canvas) dans le bottom panel
+- [x] Tooltip au survol (altitude + distance)
+- [x] Donuts de sous-scores cliquables pour filtrer l'affichage du profil
+- [x] Highlight des pics (orange) au clic sur "Pics"
+- [x] Highlight des pentes critiques (rouge) au clic sur "Pente"
+- [x] Coloration par tranche de 10 km au clic sur "Relief"
+- [🔄] **À valider** : layout du bottom panel (4 propositions dans test-layouts.html)
+- [🔄] **À corriger** : interaction sous-scores ↔ profil (petites erreurs de rendu)
 
 ---
 
@@ -131,44 +142,58 @@ Outil de cotation de la difficulté des itinéraires vélo, basé sur la grille 
 - [x] Choix persisté dans localStorage
 - [x] Scrollbar adaptée au thème
 - [x] Font Inter, sans glow, sans gradient, sobre
+- [x] Pluriels gérés (étape/étapes, pic/pics)
+- [x] Décimales avec virgule partout
 
 ### 4.2 Donuts Lighthouse
 - [x] Donut SVG avec arc de progression coloré
 - [x] Score central en gros (font-weight 800)
-- [x] Taille 72px dans le sidebar, 100px dans le bottom panel, 64px pour les sous-scores
+- [x] Taille 72px dans le sidebar, 72px dans le bottom panel, 56px pour les sous-scores
 - [x] Stroke adaptatif selon la taille
-- [x] Décimales avec virgule
 
-### 4.3 Cartes d'étape
+### 4.3 Cartes d'étape (sidebar)
 - [x] Donut + titre + badge catégorie
-- [x] Localisation (département · région) avec icône pin
+- [x] Localisation (département · région) avec icône pin Lucide
 - [x] KPIs en capsules avec icônes Lucide (distance, sécurité, D+, pics)
-- [x] Pluriels gérés (étape/étapes, pic/pics)
 
-### 4.4 Bottom Panel
-- [x] Score total + sous-scores en donuts (64px, stroke 7)
-- [x] Titre + badge catégorie sur la même ligne
-- [x] Localisation sous le titre
-- [x] Métriques en capsules avec icônes Lucide
-- [x] Bouton fermer avec frame et hover
-- [x] Limité à l'espace carte (pas sur le sidebar)
+### 4.4 Cartes territoire (sidebar)
+- [x] Donut 72px + KPIs en capsules avec icônes Lucide
+- [x] Barres de répartition proportionnelles avec % affiché
+- [x] Cliquables pour zoomer sur le territoire
 
-### 4.5 Modales
+### 4.5 Bottom Panel — détail d'une étape
+- [🔄] **Layout à valider** — 4 propositions dans `test-layouts.html` :
+  - Layout A : 3 colonnes (Score | Infos+Subscores | Profil pleine hauteur)
+  - Layout C : Score+titre en haut-gauche, subscores taqués bas-gauche, profil pleine hauteur droite
+  - Layout D : Profil en fond avec overlay dégradé à gauche (immersif)
+  - Layout E : Tout en haut sur une ligne, profil pleine largeur en bas
+- [🔄] **Bouton fermer** : halo de fond autour pour ne pas coller au profil
+- [🔄] **Interaction sous-scores ↔ profil** : à corriger (erreurs de rendu)
+
+### 4.6 Modales
 - [x] Modale de cotation (explication de la grille FVT, 5 indicateurs, catégories)
 - [x] Modale d'audit de comparaison (tableau + KPIs + export CSV)
 - [x] Modale d'ajout d'itinéraire (nom, URL+scraping, GeoJSON, GPX)
 - [x] Fermeture par clic fond / X / Escape
 - [x] Autofill compatible dark mode
+- [x] Zones d'upload alignées avec descriptions vulgarisées
+
+### 4.7 Déploiement
+- [x] GitHub Pages activé sur https://cniort.github.io/cotation-parcours-velo/
+- [x] Données Vélodyssée incluses (GeoJSON + GPX)
+- [x] Redéploiement automatique à chaque push sur main
 
 ---
 
 ## 5. À faire — Prochaines priorités
 
-1. [ ] Persistance des itinéraires importés (IndexedDB)
-2. [ ] Donnée "provisoire" depuis ON3V/RVM (indicateur 2)
-3. [ ] Export PDF du tableau de classement par étape
-4. [ ] Export image de la carte avec les scores
-5. [ ] Lien partageable avec filtres en paramètres URL
-6. [ ] Filtre par revêtement et par score (slider)
-7. [ ] Support GeoPackage (.gpkg) via sql.js
-8. [ ] Profil altimétrique dans le bottom panel
+1. [🔄] Valider le layout du bottom panel (choisir parmi A/C/D/E)
+2. [🔄] Corriger l'interaction sous-scores ↔ profil altimétrique
+3. [ ] Persistance des itinéraires importés (IndexedDB)
+4. [ ] Donnée "provisoire" depuis ON3V/RVM (indicateur 2)
+5. [ ] Export PDF du tableau de classement par étape
+6. [ ] Export image de la carte avec les scores
+7. [ ] Lien partageable avec filtres en paramètres URL
+8. [ ] Filtre par revêtement et par score (slider)
+9. [ ] Marqueurs ponctuels sur la carte (pics, changements de voie)
+10. [ ] Coloration continue du tracé (par pente ou par type de voie)

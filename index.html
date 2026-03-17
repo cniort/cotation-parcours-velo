@@ -119,13 +119,21 @@
   <!-- Crédit -->
   <div id="app-credit">Développé par Corentin NIORT</div>
 
-  <!-- Panel bas-gauche pour le détail d'une étape -->
+  <!-- Panel bas pour le détail d'une étape -->
   <div id="bottom-panel">
     <button class="panel-close" onclick="closeBottomPanel()">&times;</button>
-    <div class="panel-main">
+    <!-- Ligne 1 : donut + infos -->
+    <div class="panel-top">
       <div id="panel-donut"></div>
-      <div class="panel-info" id="panel-info"></div>
-      <div class="panel-subscores" id="panel-subscores"></div>
+      <div id="panel-info"></div>
+    </div>
+    <!-- Ligne 2 : sous-scores + profil altimétrique -->
+    <div class="panel-bottom-row">
+      <div class="panel-subscores-row" id="panel-subscores"></div>
+      <div class="panel-elevation">
+        <canvas id="elevation-canvas"></canvas>
+        <div id="elevation-tooltip" class="hidden"></div>
+      </div>
     </div>
   </div>
 

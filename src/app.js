@@ -930,7 +930,7 @@ function buildTerritoryScores() {
           const itemTerritory = item.stage.properties[field];
           const isInTerritory = itemTerritory === territoryName;
           item.layer.setStyle({
-            opacity: isInTerritory ? 1 : 0.1,
+            opacity: isInTerritory ? 1 : 0.25,
             weight: isInTerritory ? 6 : 3
           });
         });
