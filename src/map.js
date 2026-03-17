@@ -187,8 +187,8 @@ function showBottomPanel(stage, score) {
   currentPanelStageIndex = props.index;
   currentPanelHighlight = null;
 
-  // Donut principal (72px — Layout C)
-  document.getElementById('panel-donut').innerHTML = createDonutSVG(score.total, score.maxPossible, color, 72);
+  // Donut principal (60px — Layout C)
+  document.getElementById('panel-donut').innerHTML = createDonutSVG(score.total, score.maxPossible, color, 60);
 
   // Infos — Layout C : titre+badge, location, chips empilés
   const location = [props.departement, props.region].filter(Boolean).join(' · ');
@@ -208,7 +208,7 @@ function showBottomPanel(stage, score) {
     </div>
   `;
 
-  // Sous-scores cliquables (taqués en bas gauche, 42px — Layout C)
+  // Sous-scores cliquables (taqués en bas gauche, 38px — Layout C)
   let subHTML = '';
   for (const [key, sub] of Object.entries(score.subScores)) {
     const c = subScoreColor(sub.points, sub.maxPoints);
@@ -216,7 +216,7 @@ function showBottomPanel(stage, score) {
       <div class="subscore-item ${sub.available ? '' : 'subscore-unavailable'}"
            data-indicator="${key}"
            onclick="toggleElevationHighlight('${key}')">
-        ${createDonutSVG(sub.points, sub.maxPoints, c, 42, sub.label)}
+        ${createDonutSVG(sub.points, sub.maxPoints, c, 38, sub.label)}
       </div>
     `;
   }
