@@ -418,6 +418,7 @@ function splitIntoStages(flatFeatures, stageLength = 10) {
   let stageCoords = [];
   let stageDist = 0;
   let stageAttrs = { propre: 0, partage: 0, lisse: 0, rugueux: 0, meuble: 0 };
+  let stageSiteTypes = []; // true = site propre, false = site partagé (par coordonnée)
   let stageRegion = '';
   let stageDept = '';
 
@@ -443,11 +444,14 @@ function splitIntoStages(flatFeatures, stageLength = 10) {
         slopeScore: elev.slopeScore,
         maxSlope: elev.maxSlope,
         region: stageRegion,
-        departement: stageDept
+        departement: stageDept,
+        siteTypes: stageSiteTypes
       }
     });
     stageIdx++;
+    const lastSite = stageSiteTypes[stageSiteTypes.length - 1] || false;
     stageCoords = [stageCoords[stageCoords.length - 1]];
+    stageSiteTypes = [lastSite];
     stageDist = 0;
     stageAttrs = { propre: 0, partage: 0, lisse: 0, rugueux: 0, meuble: 0 };
   }
@@ -463,6 +467,7 @@ function splitIntoStages(flatFeatures, stageLength = 10) {
     for (let i = 0; i < coords.length; i++) {
       if (stageCoords.length === 0) {
         stageCoords.push(coords[i]);
+        stageSiteTypes.push(isPropre);
         stageRegion = feat.region;
         stageDept = feat.departement;
         continue;
@@ -478,6 +483,7 @@ function splitIntoStages(flatFeatures, stageLength = 10) {
           pushStage();
         }
         stageCoords = [coords[i]];
+        stageSiteTypes = [isPropre];
         stageDist = 0;
         stageRegion = feat.region;
         stageDept = feat.departement;
@@ -486,6 +492,7 @@ function splitIntoStages(flatFeatures, stageLength = 10) {
 
       stageDist += segDist;
       stageCoords.push(coords[i]);
+      stageSiteTypes.push(isPropre);
 
       if (isPropre) stageAttrs.propre += segDist;
       else stageAttrs.partage += segDist;
@@ -532,6 +539,7 @@ function splitIntoTouristicStages(flatFeatures, etapesConfig) {
   let stageCoords = [];
   let stageDist = 0;
   let stageAttrs = { propre: 0, partage: 0, lisse: 0, rugueux: 0, meuble: 0 };
+  let stageSiteTypes = [];
   let stageRegion = '';
   let stageDept = '';
   let cumulDist = 0;
@@ -567,11 +575,14 @@ function splitIntoTouristicStages(flatFeatures, etapesConfig) {
         slopeScore: elev.slopeScore,
         maxSlope: elev.maxSlope,
         region: stageRegion,
-        departement: stageDept
+        departement: stageDept,
+        siteTypes: stageSiteTypes
       }
     });
     stageIdx++;
+    const lastSite = stageSiteTypes[stageSiteTypes.length - 1] || false;
     stageCoords = [stageCoords[stageCoords.length - 1]];
+    stageSiteTypes = [lastSite];
     stageDist = 0;
     stageAttrs = { propre: 0, partage: 0, lisse: 0, rugueux: 0, meuble: 0 };
   }
@@ -587,6 +598,7 @@ function splitIntoTouristicStages(flatFeatures, etapesConfig) {
     for (let i = 0; i < coords.length; i++) {
       if (stageCoords.length === 0) {
         stageCoords.push(coords[i]);
+        stageSiteTypes.push(isPropre);
         stageRegion = feat.region;
         stageDept = feat.departement;
         continue;
@@ -599,12 +611,14 @@ function splitIntoTouristicStages(flatFeatures, etapesConfig) {
       // On ajoute le point mais on ne compte la distance que si < 0.5 km
       if (segDist > 0.5) {
         stageCoords.push(coords[i]);
+        stageSiteTypes.push(isPropre);
         continue;
       }
 
       cumulDist += segDist;
       stageDist += segDist;
       stageCoords.push(coords[i]);
+      stageSiteTypes.push(isPropre);
 
       if (isPropre) stageAttrs.propre += segDist;
       else stageAttrs.partage += segDist;

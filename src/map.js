@@ -167,41 +167,48 @@ const ICONS = {
 };
 
 let currentPanelStage = null;
+let currentPanelStageIndex = null;
 let currentPanelHighlight = null; // 'securite', 'relief', 'pics', 'pente', null
+
+// Correspondance sous-score → data-kpi sur les chips
+const SUBSCORE_KPI_MAP = {
+  securite: 'secu',
+  relief: 'dplus',
+  pics: 'pics',
+  pente: 'pics',
+  provisoire: null
+};
 
 function showBottomPanel(stage, score) {
   const panel = document.getElementById('bottom-panel');
   const props = stage.properties;
   const color = score.category.color;
   currentPanelStage = stage;
+  currentPanelStageIndex = props.index;
   currentPanelHighlight = null;
 
-  // Donut principal
+  // Donut principal (72px — Layout C)
   document.getElementById('panel-donut').innerHTML = createDonutSVG(score.total, score.maxPossible, color, 72);
 
-  // Infos
+  // Infos — Layout C : titre+badge, location, chips empilés
   const location = [props.departement, props.region].filter(Boolean).join(' · ');
   const hasElev = props.elevationGain !== null;
 
   document.getElementById('panel-info').innerHTML = `
-    <div>
-      <div class="panel-title-row">
-        <h3>${props.name}</h3>
-        <span class="panel-badge" style="background:${color};">${score.category.name}</span>
-      </div>
-      ${location ? `<div class="panel-location">${ICONS.mapPin}<span>${location}</span></div>` : ''}
-      <div class="panel-chips">
-        <span class="panel-chip">${ICONS.route} ${String(props.distance).replace('.', ',')} km</span>
-        <span class="panel-chip">${ICONS.shield} ${props.pctSitePropre}% sécurisé</span>
-        ${hasElev ? `<span class="panel-chip">${ICONS.trendingUp} D+ ${props.elevationGain}m</span>` : ''}
-        ${hasElev ? `<span class="panel-chip">${ICONS.trendingUp} D- ${props.elevationLoss}m</span>` : ''}
-        ${hasElev && props.numPics > 0 ? `<span class="panel-chip">${ICONS.mountain} ${props.numPics} pic${props.numPics > 1 ? 's' : ''}</span>` : ''}
-        ${hasElev && props.maxSlope > 0 ? `<span class="panel-chip">${ICONS.triangle} max ${String(props.maxSlope).replace('.', ',')}%</span>` : ''}
-      </div>
+    <div class="panel-title-row">
+      <h3>${props.name}</h3>
+      <span class="panel-badge" style="background:${color};">${score.category.name}</span>
+    </div>
+    ${location ? `<div class="panel-location">${ICONS.mapPin}<span>${location}</span></div>` : ''}
+    <div class="panel-chips">
+      <span class="panel-chip" data-kpi="dist">${ICONS.route} ${String(props.distance).replace('.', ',')} km</span>
+      <span class="panel-chip" data-kpi="secu">${ICONS.shield} ${props.pctSitePropre}% sécu.</span>
+      ${hasElev ? `<span class="panel-chip" data-kpi="dplus">${ICONS.trendingUp} D+ ${props.elevationGain}m</span>` : ''}
+      ${hasElev && props.numPics > 0 ? `<span class="panel-chip" data-kpi="pics">${ICONS.mountain} ${props.numPics} pic${props.numPics > 1 ? 's' : ''}</span>` : ''}
     </div>
   `;
 
-  // Sous-scores cliquables (ligne 2 gauche)
+  // Sous-scores cliquables (taqués en bas gauche, 42px — Layout C)
   let subHTML = '';
   for (const [key, sub] of Object.entries(score.subScores)) {
     const c = subScoreColor(sub.points, sub.maxPoints);
@@ -209,7 +216,7 @@ function showBottomPanel(stage, score) {
       <div class="subscore-item ${sub.available ? '' : 'subscore-unavailable'}"
            data-indicator="${key}"
            onclick="toggleElevationHighlight('${key}')">
-        ${createDonutSVG(sub.points, sub.maxPoints, c, 56, sub.label)}
+        ${createDonutSVG(sub.points, sub.maxPoints, c, 42, sub.label)}
       </div>
     `;
   }
@@ -217,8 +224,37 @@ function showBottomPanel(stage, score) {
 
   panel.classList.add('visible');
 
-  // Dessiner le profil altimétrique
-  requestAnimationFrame(() => drawElevationProfile(stage));
+  // Navigation : afficher les flèches et les positionner au-dessus du panel
+  const nav = document.getElementById('panel-nav');
+  nav.classList.add('visible');
+  updateNavButtons();
+  requestAnimationFrame(() => {
+    const panelRect = panel.getBoundingClientRect();
+    const mapRect = document.getElementById('map-container').getBoundingClientRect();
+    nav.style.left = (panelRect.left - mapRect.left) + 'px';
+    nav.style.bottom = (mapRect.bottom - panelRect.top + 6) + 'px';
+  });
+
+  // Sélectionner automatiquement le premier sous-score (sécurité)
+  const firstIndicator = Object.keys(score.subScores)[0];
+  if (firstIndicator) {
+    requestAnimationFrame(() => toggleElevationHighlight(firstIndicator));
+  } else {
+    requestAnimationFrame(() => drawElevationProfile(stage));
+  }
+}
+
+function navigateStage(direction) {
+  if (currentPanelStageIndex === null || !currentStages || !currentScores) return;
+  const newIdx = currentPanelStageIndex + direction;
+  if (newIdx < 0 || newIdx >= currentStages.features.length) return;
+  highlightStage(newIdx, currentStages);
+}
+
+function updateNavButtons() {
+  const total = currentStages ? currentStages.features.length : 0;
+  document.getElementById('btn-prev-stage').disabled = currentPanelStageIndex <= 0;
+  document.getElementById('btn-next-stage').disabled = currentPanelStageIndex >= total - 1;
 }
 
 function toggleElevationHighlight(indicator) {
@@ -229,9 +265,21 @@ function toggleElevationHighlight(indicator) {
   }
 
   // Mettre à jour l'état actif des donuts
-  document.querySelectorAll('.panel-right .subscore-item').forEach(el => {
+  document.querySelectorAll('#panel-subscores .subscore-item').forEach(el => {
     el.classList.toggle('subscore-active', el.dataset.indicator === currentPanelHighlight);
   });
+
+  // Highlight du KPI correspondant
+  document.querySelectorAll('#panel-info .panel-chip').forEach(el => {
+    el.classList.remove('chip-highlight');
+  });
+  if (currentPanelHighlight) {
+    const kpiKey = SUBSCORE_KPI_MAP[currentPanelHighlight];
+    if (kpiKey) {
+      const chip = document.querySelector(`#panel-info .panel-chip[data-kpi="${kpiKey}"]`);
+      if (chip) chip.classList.add('chip-highlight');
+    }
+  }
 
   if (currentPanelStage) {
     drawElevationProfile(currentPanelStage);
@@ -283,10 +331,10 @@ function drawElevationProfile(stage) {
   const maxEle = Math.max(...elevations);
   const eleRange = maxEle - minEle || 1;
 
-  const padTop = 8;
-  const padBottom = 16;
-  const padLeft = 2;
-  const padRight = 2;
+  const padTop = 0;
+  const padBottom = 0;
+  const padLeft = 0;
+  const padRight = 0;
   const pw = w - padLeft - padRight;
   const ph = h - padTop - padBottom;
 
@@ -342,11 +390,20 @@ function drawElevationProfile(stage) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
+  // Helper : message centré sur le profil
+  function drawProfileMessage(msg) {
+    ctx.fillStyle = textMuted;
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(msg, w / 2, h / 2);
+  }
+
   // Colorier selon le highlight actif
-  if (currentPanelHighlight === 'pics' || currentPanelHighlight === 'pente') {
-    // Mettre en évidence les pics (montées > 4%, > 200m)
+  if (currentPanelHighlight === 'pics') {
+    // Pics : localisation des montées > 4%, > 200m — orange uniforme
     let climbStart = -1;
     let climbDist = 0;
+    let found = false;
 
     for (let i = 1; i < points.length; i++) {
       const segDist = (points[i].dist - points[i - 1].dist) * 1000;
@@ -359,41 +416,113 @@ function drawElevationProfile(stage) {
         climbDist += segDist;
       } else {
         if (climbStart >= 0 && climbDist >= 200) {
-          // Dessiner le pic
-          drawHighlightSegment(ctx, points, climbStart, i - 1, xPos, yPos, h, padBottom,
-            currentPanelHighlight === 'pente' ? '#ef4444' : '#f59e0b');
+          drawHighlightSegment(ctx, points, climbStart, i - 1, xPos, yPos, h, padBottom, '#f59e0b');
+          found = true;
         }
         climbStart = -1;
         climbDist = 0;
       }
     }
     if (climbStart >= 0 && climbDist >= 200) {
-      drawHighlightSegment(ctx, points, climbStart, points.length - 1, xPos, yPos, h, padBottom,
-        currentPanelHighlight === 'pente' ? '#ef4444' : '#f59e0b');
+      drawHighlightSegment(ctx, points, climbStart, points.length - 1, xPos, yPos, h, padBottom, '#f59e0b');
+      found = true;
     }
+    if (!found) drawProfileMessage('Aucun pic détecté (montée > 4% sur > 200 m)');
+  } else if (currentPanelHighlight === 'pente') {
+    // Pente : intensité de pente dans les pics — orange 4-8%, rouge > 8%
+    let climbStart = -1;
+    let climbDist = 0;
+    let climbMaxSlope = 0;
+    let found = false;
+
+    for (let i = 1; i < points.length; i++) {
+      const segDist = (points[i].dist - points[i - 1].dist) * 1000;
+      if (segDist < 2) continue;
+      const diff = points[i].ele - points[i - 1].ele;
+      const slope = (diff / segDist) * 100;
+
+      if (slope > 4) {
+        if (climbStart < 0) climbStart = i - 1;
+        climbDist += segDist;
+        if (slope > climbMaxSlope) climbMaxSlope = slope;
+      } else {
+        if (climbStart >= 0 && climbDist >= 200) {
+          const picColor = climbMaxSlope >= 8 ? '#ef4444' : '#f59e0b';
+          drawHighlightSegment(ctx, points, climbStart, i - 1, xPos, yPos, h, padBottom, picColor);
+          found = true;
+        }
+        climbStart = -1;
+        climbDist = 0;
+        climbMaxSlope = 0;
+      }
+    }
+    if (climbStart >= 0 && climbDist >= 200) {
+      const picColor = climbMaxSlope >= 8 ? '#ef4444' : '#f59e0b';
+      drawHighlightSegment(ctx, points, climbStart, points.length - 1, xPos, yPos, h, padBottom, picColor);
+      found = true;
+    }
+    if (!found) drawProfileMessage('Aucune pente critique détectée');
   } else if (currentPanelHighlight === 'relief') {
-    // Colorier par tranche de 10 km selon le D+
+    // Relief : colorier uniquement les portions en montée (D+), dans la couleur de difficulté de leur tranche
+
+    // 1. Calculer la couleur de chaque tranche de 10 km
+    const trancheColors = []; // { startIdx, endIdx, color } pour chaque tranche
     let trancheStart = 0;
     let trancheDist = 0;
     let trancheGain = 0;
 
     for (let i = 1; i < points.length; i++) {
-      const segDist = (points[i].dist - points[i - 1].dist);
+      const segDist = points[i].dist - points[i - 1].dist;
       const diff = points[i].ele - points[i - 1].ele;
       trancheDist += segDist;
       if (diff > 0) trancheGain += diff;
 
       if (trancheDist >= 10 || i === points.length - 1) {
-        const trancheColor = trancheGain <= 100 ? '#22c55e' : trancheGain <= 200 ? '#f59e0b' : '#ef4444';
-        drawHighlightSegment(ctx, points, trancheStart, i, xPos, yPos, h, padBottom, trancheColor);
+        const color = trancheGain <= 100 ? '#22c55e' : trancheGain <= 200 ? '#f59e0b' : '#ef4444';
+        trancheColors.push({ startIdx: trancheStart, endIdx: i, color });
         trancheStart = i;
         trancheDist = 0;
         trancheGain = 0;
       }
     }
+
+    // 2. Pour chaque tranche, ne colorier que les segments en montée
+    for (const tranche of trancheColors) {
+      let climbStart = -1;
+      for (let i = tranche.startIdx + 1; i <= tranche.endIdx; i++) {
+        const diff = points[i].ele - points[i - 1].ele;
+        if (diff > 0) {
+          if (climbStart < 0) climbStart = i - 1;
+        } else {
+          if (climbStart >= 0) {
+            drawHighlightSegment(ctx, points, climbStart, i - 1, xPos, yPos, h, padBottom, tranche.color);
+            climbStart = -1;
+          }
+        }
+      }
+      if (climbStart >= 0) {
+        drawHighlightSegment(ctx, points, climbStart, tranche.endIdx, xPos, yPos, h, padBottom, tranche.color);
+      }
+    }
   } else if (currentPanelHighlight === 'securite') {
-    // Pas d'altitude à colorier pour la sécurité, mais on pourrait montrer les zones partagées
-    // Pour l'instant on laisse le profil neutre
+    // Sécurité : colorier le profil selon site propre (vert) vs partagé (rouge)
+    const siteTypes = stage.properties.siteTypes;
+    if (siteTypes && siteTypes.length === coords.length) {
+      let segStart = 0;
+      let segPropre = siteTypes[0];
+      for (let i = 1; i < points.length; i++) {
+        if (siteTypes[i] !== segPropre || i === points.length - 1) {
+          const endIdx = i === points.length - 1 ? i : i - 1;
+          const color = segPropre ? '#22c55e' : '#ef4444';
+          drawHighlightSegment(ctx, points, segStart, endIdx, xPos, yPos, h, padBottom, color);
+          segStart = i;
+          segPropre = siteTypes[i];
+        }
+      }
+    }
+  } else if (currentPanelHighlight === 'provisoire') {
+    // Provisoire : donnée non disponible
+    drawProfileMessage('Donnée provisoire non disponible');
   } else {
     // Pas de highlight : dessiner la courbe en couleur accent
     ctx.beginPath();
@@ -408,13 +537,43 @@ function drawElevationProfile(stage) {
     ctx.stroke();
   }
 
-  // Labels altitude min/max
+  // Helper : label avec fond pour lisibilité
+  const surfaceColor = style.getPropertyValue('--bg-surface-hover').trim() || '#22222e';
+  function drawLabel(text, x, y, align) {
+    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.textAlign = align;
+    const metrics = ctx.measureText(text);
+    const tw = metrics.width;
+    const th = 11;
+    const px = 4, py = 2;
+    const rx = align === 'left' ? x - px : x - tw - px;
+    ctx.fillStyle = surfaceColor;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.roundRect(rx, y - th - py, tw + px * 2, th + py * 2, 3);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = textMuted;
+    ctx.fillText(text, x, y);
+  }
+
+  // Point culminant : triangle marqueur
+  const peakPoint = points.reduce((best, p) => p.ele > best.ele ? p : best);
+  const peakX = xPos(peakPoint.dist);
+  const peakY = yPos(peakPoint.ele);
   ctx.fillStyle = textMuted;
-  ctx.font = '9px Inter, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(`${Math.round(minEle)}m`, padLeft + 2, h - padBottom + 12);
-  ctx.textAlign = 'right';
-  ctx.fillText(`${Math.round(maxEle)}m`, w - padRight - 2, padTop + 10);
+  ctx.beginPath();
+  ctx.moveTo(peakX, peakY - 3);
+  ctx.lineTo(peakX - 3, peakY - 8);
+  ctx.lineTo(peakX + 3, peakY - 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Label "▲ XXXm" en haut à gauche
+  drawLabel(`▲ ${Math.round(maxEle)}m`, 12, 22, 'left');
+
+  // Label altitude min en bas à gauche
+  drawLabel(`${Math.round(minEle)}m`, 12, h - 10, 'left');
 
   // Tooltip au survol
   canvas.onmousemove = (e) => {
@@ -460,6 +619,8 @@ function drawHighlightSegment(ctx, points, startIdx, endIdx, xPos, yPos, h, padB
 
 function closeBottomPanel() {
   document.getElementById('bottom-panel').classList.remove('visible');
+  document.getElementById('panel-nav').classList.remove('visible');
+  currentPanelStageIndex = null;
   highlightLayer.clearLayers();
   // Restaurer l'opacité de tous les tronçons
   stageLayerItems.forEach(item => {

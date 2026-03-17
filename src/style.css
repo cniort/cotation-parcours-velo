@@ -794,7 +794,36 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
 .subscore-unavailable { opacity: 0.2; }
 .subscore-desc { font-size: 0.58rem; color: var(--text-muted); margin-top: 2px; }
 
-/* ── Bottom panel ── */
+/* ── Navigation étapes ── */
+#panel-nav {
+  position: absolute;
+  z-index: 1001;
+  display: none;
+  gap: 4px;
+}
+#panel-nav.visible { display: flex; }
+#panel-nav button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#panel-nav button:hover {
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
+}
+#panel-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 /* ── Bottom panel ── */
 #bottom-panel {
   position: absolute;
@@ -804,7 +833,7 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 14px;
   display: none;
   z-index: 1000;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
@@ -814,14 +843,14 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
 #bottom-panel .panel-close {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  top: -38px;
+  right: 0;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-surface-hover);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-muted);
@@ -837,19 +866,40 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
   color: var(--text-primary);
 }
 
-/* Ligne 1 : donut + infos */
-.panel-top {
+/* Layout C : ligne principale — colonne gauche + profil pleine hauteur à droite */
+.panel-main-row {
   display: flex;
-  align-items: center;
   gap: 14px;
-  margin-bottom: 10px;
-  padding-right: 36px;
+  height: 170px;
+}
+
+/* Colonne gauche */
+.panel-col-left {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 200px;
+  max-width: 280px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+/* Haut gauche : donut + titre/badge/location/chips */
+.panel-col-left-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.panel-col-left-top-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 #bottom-panel .panel-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
 }
 #bottom-panel .panel-title-row h3 {
   font-size: 0.9rem;
@@ -871,7 +921,6 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
   gap: 5px;
   font-size: 0.68rem;
   color: var(--text-muted);
-  margin-bottom: 6px;
 }
 .panel-location svg { flex-shrink: 0; }
 .panel-chips {
@@ -894,38 +943,58 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
 }
 .panel-chip svg { color: var(--text-muted); flex-shrink: 0; }
 
-/* Ligne 2 : sous-scores + profil */
-.panel-bottom-row {
+/* Bas gauche : sous-scores taqués */
+.panel-col-left-bottom {
   display: flex;
-  gap: 12px;
-  height: 90px;
+  gap: 2px;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
-
-.panel-subscores-row {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-  align-items: center;
-}
-.panel-subscores-row .subscore-item {
+.panel-col-left-bottom .subscore-item {
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
   border: 2px solid transparent;
   transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.panel-subscores-row .subscore-item:hover {
+.panel-col-left-bottom .subscore-item .donut-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.panel-col-left-bottom .subscore-item:hover {
   background: var(--bg-surface-hover);
 }
-.panel-subscores-row .subscore-item.subscore-active {
+.panel-col-left-bottom .subscore-item.subscore-active {
   border-color: var(--accent);
   background: var(--accent-muted);
+}
+.panel-col-left-bottom .donut-label {
+  font-size: 0.56rem;
+  text-align: center;
+}
+
+/* KPI chip highlight quand sous-score actif */
+.panel-chip.chip-highlight {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--accent-muted);
+}
+
+/* Colonne droite : profil pleine hauteur */
+.panel-col-right {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Profil altimétrique */
 .panel-elevation {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  height: 100%;
   position: relative;
   border-radius: 6px;
   background: var(--bg-surface-hover);

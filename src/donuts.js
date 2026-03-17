@@ -16,7 +16,8 @@ function createDonutSVG(value, max, color, size = 80, label = '') {
   if (size >= 100) { fontSize = 30; strokeWidth = 8; }
   else if (size >= 72) { fontSize = 26; strokeWidth = 7; }
   else if (size >= 60) { fontSize = 22; strokeWidth = 7; }
-  else { fontSize = 18; strokeWidth = 5; }
+  else if (size >= 40) { fontSize = 24; strokeWidth = 6; }
+  else { fontSize = 22; strokeWidth = 5; }
 
   return `
     <div class="donut-container" style="width:${size}px; height:${size + (label ? 22 : 0)}px;">

@@ -119,20 +119,34 @@
   <!-- Crédit -->
   <div id="app-credit">Développé par Corentin NIORT</div>
 
-  <!-- Panel bas pour le détail d'une étape -->
+  <!-- Navigation étapes -->
+  <div id="panel-nav">
+    <button id="btn-prev-stage" onclick="navigateStage(-1)" title="Étape précédente">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button id="btn-next-stage" onclick="navigateStage(1)" title="Étape suivante">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+  </div>
+
+  <!-- Panel bas pour le détail d'une étape — Layout C -->
   <div id="bottom-panel">
     <button class="panel-close" onclick="closeBottomPanel()">&times;</button>
-    <!-- Ligne 1 : donut + infos -->
-    <div class="panel-top">
-      <div id="panel-donut"></div>
-      <div id="panel-info"></div>
-    </div>
-    <!-- Ligne 2 : sous-scores + profil altimétrique -->
-    <div class="panel-bottom-row">
-      <div class="panel-subscores-row" id="panel-subscores"></div>
-      <div class="panel-elevation">
-        <canvas id="elevation-canvas"></canvas>
-        <div id="elevation-tooltip" class="hidden"></div>
+    <div class="panel-main-row">
+      <!-- Colonne gauche : score + infos en haut, sous-scores en bas -->
+      <div class="panel-col-left">
+        <div class="panel-col-left-top">
+          <div id="panel-donut"></div>
+          <div id="panel-info" class="panel-col-left-top-info"></div>
+        </div>
+        <div class="panel-col-left-bottom" id="panel-subscores"></div>
+      </div>
+      <!-- Colonne droite : profil pleine hauteur -->
+      <div class="panel-col-right">
+        <div class="panel-elevation">
+          <canvas id="elevation-canvas"></canvas>
+          <div id="elevation-tooltip" class="hidden"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -363,6 +377,7 @@
 
       <div class="modal-footer">
         <p>Méthodologie : <strong>France Vélo Tourisme</strong> — Actualisation des cotations de difficulté des parcours (V3)</p>
+        <p>Développé par <strong>Corentin NIORT</strong></p>
       </div>
     </div>
   </div>
