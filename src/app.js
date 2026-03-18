@@ -7,6 +7,7 @@ let currentScores = null;
 let allStageItems = [];
 let sortedFeaturesCache = null;
 let currentView = '10km'; // '10km' ou 'touristique'
+let territoryNavData = null; // { sorted: [...], index: 0, field: 'region'|'departement' }
 
 // ── Base de données des itinéraires ──
 const itineraryDB = {}; // clé → { name, sortedFeatures, gpxCoords, scrapedStages }
@@ -89,8 +90,19 @@ document.addEventListener('keydown', (e) => {
     closeLegendModal();
     closeComparisonModal();
     closeImportModal();
+    closeDiscussionModal();
   }
 });
+
+// ── Modale Discussion ──
+function openDiscussionModal() {
+  document.getElementById('discussion-modal').classList.add('visible');
+}
+function closeDiscussionModal(event) {
+  if (!event || event.target === event.currentTarget) {
+    document.getElementById('discussion-modal').classList.remove('visible');
+  }
+}
 
 // ── Modale Import ──
 
@@ -324,7 +336,7 @@ function initViewToggle() {
     });
   });
 
-  // Sous-toggle étapes
+  // Sous-toggle étapes (global — visible sur toutes les vues)
   document.querySelectorAll('.view-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
@@ -332,11 +344,7 @@ function initViewToggle() {
       currentView = btn.dataset.view;
 
       const compBar = document.getElementById('comparison-bar');
-      if (currentView === 'touristique') {
-        compBar.classList.remove('hidden');
-      } else {
-        compBar.classList.add('hidden');
-      }
+      compBar.classList.toggle('hidden', !(currentPanel === 'etapes' && currentView === 'touristique'));
 
       if (sortedFeaturesCache) rebuildView();
     });
@@ -350,16 +358,18 @@ function updatePanelVisibility() {
   const stagesList = document.getElementById('stages-list');
   const territoryList = document.getElementById('territory-list');
 
+  // Sub-toggle toujours visible (10 km / touristique impacte toutes les vues)
+  subToggle.style.display = 'flex';
+
+  // Comparison bar : uniquement en mode étapes + touristique
+  compBar.classList.toggle('hidden', !(currentPanel === 'etapes' && currentView === 'touristique'));
+
   if (currentPanel === 'etapes') {
-    subToggle.style.display = 'flex';
     filters.style.display = '';
     stagesList.style.display = '';
     territoryList.style.display = 'none';
-    compBar.classList.toggle('hidden', currentView !== 'touristique');
   } else {
-    subToggle.style.display = 'none';
     filters.style.display = 'none';
-    compBar.classList.add('hidden');
     stagesList.style.display = 'none';
     territoryList.style.display = '';
     buildTerritoryScores();
@@ -733,10 +743,6 @@ function processGeoJSON(geojson) {
 
   rebuildView();
 
-  // Invalider le cache territoires
-  stages10kmCache = null;
-  scores10kmCache = null;
-
   // Stocker dans la DB si pas encore fait
   if (!currentItineraryKey) {
     currentItineraryKey = 'velodyssee';
@@ -825,22 +831,12 @@ function updateSidebar(stages, scores) {
 
 // ── Scores par territoire ──
 
-// Cache des données 10 km pour les territoires
-let stages10kmCache = null;
-let scores10kmCache = null;
-
 function buildTerritoryScores() {
-  // Toujours utiliser les tranches de 10 km pour les territoires
-  if (!sortedFeaturesCache) return;
+  // Utiliser les stages/scores courants (10 km ou touristiques selon le toggle actif)
+  if (!currentStages || !currentScores) return;
 
-  // Recalculer les stages 10 km si pas en cache
-  if (!stages10kmCache) {
-    stages10kmCache = splitIntoStages(sortedFeaturesCache, 10);
-    scores10kmCache = stages10kmCache.features.map(s => computeStageScore(s));
-  }
-
-  const stages = stages10kmCache;
-  const scores = scores10kmCache;
+  const stages = currentStages;
+  const scores = currentScores;
   const field = currentPanel === 'regions' ? 'region' : 'departement';
 
   // Agréger par territoire
@@ -862,10 +858,13 @@ function buildTerritoryScores() {
   const list = document.getElementById('territory-list');
   list.innerHTML = '';
 
-  // Bandeau informatif
+  // Bandeau informatif dynamique
+  const bannerText = currentView === 'touristique'
+    ? 'Scores calculés sur la base des étapes touristiques'
+    : 'Scores calculés sur la base des tranches de 10 km';
   list.innerHTML = `
     <div class="territory-info-banner" id="territory-banner">
-      <span>Scores calculés sur la base des tranches de 10 km</span>
+      <span>${bannerText}</span>
       <button onclick="document.getElementById('territory-banner').style.display='none'">&times;</button>
     </div>
   `;
@@ -877,7 +876,7 @@ function buildTerritoryScores() {
     return idxA - idxB;
   });
 
-  sorted.forEach(t => {
+  sorted.forEach((t, tIdx) => {
     const avgScore = t.scores.reduce((s, sc) => s + sc.total, 0) / t.scores.length;
     const pctPropre = Math.round((t.distPropre / t.totalDist) * 100);
 
@@ -892,12 +891,6 @@ function buildTerritoryScores() {
 
     const avgColor = scoreToColor(Math.round(avgScore));
     const avgRounded = Math.round(avgScore * 10) / 10;
-
-    // Collecter les bounds pour le zoom
-    const allCoords = [];
-    t.stages.forEach(s => {
-      s.geometry.coordinates.forEach(c => allCoords.push([c[1], c[0]]));
-    });
 
     const card = document.createElement('div');
     card.className = 'territory-card';
@@ -920,24 +913,148 @@ function buildTerritoryScores() {
       </div>
     `;
 
-    // Clic → zoom sur le territoire
-    const territoryName = t.name;
+    // Clic → zoom + bottom panel avec profil altimétrique et score
     card.addEventListener('click', () => {
-      if (allCoords.length > 0) {
-        highlightLayer.clearLayers();
-        // Atténuer tous les tronçons sauf ceux du territoire (comparaison par nom de territoire)
-        stageLayerItems.forEach(item => {
-          const itemTerritory = item.stage.properties[field];
-          const isInTerritory = itemTerritory === territoryName;
-          item.layer.setStyle({
-            opacity: isInTerritory ? 1 : 0.25,
-            weight: isInTerritory ? 6 : 3
-          });
-        });
-        map.fitBounds(L.latLngBounds(allCoords), { padding: [60, 60], maxZoom: 11 });
-      }
+      territoryNavData = { sorted, index: tIdx, field };
+      selectTerritory(t, field);
     });
 
     list.appendChild(card);
   });
+
+  // Rafraîchir le bottom panel si un territoire est actuellement sélectionné
+  if (territoryNavData && document.getElementById('bottom-panel').classList.contains('visible')) {
+    const oldName = territoryNavData.sorted[territoryNavData.index]?.name;
+    if (oldName) {
+      const newIdx = sorted.findIndex(t => t.name === oldName);
+      if (newIdx >= 0) {
+        territoryNavData = { sorted, index: newIdx, field };
+        selectTerritory(sorted[newIdx], field);
+      }
+    }
+  }
+}
+
+// ── Sélection d'un territoire (zoom + bottom panel) ──
+
+function selectTerritory(territory, field) {
+  // Zoom et highlight sur la carte
+  const allCoords = [];
+  territory.stages.forEach(s => {
+    s.geometry.coordinates.forEach(c => allCoords.push([c[1], c[0]]));
+  });
+
+  highlightLayer.clearLayers();
+  stageLayerItems.forEach(item => {
+    const itemTerritory = item.stage.properties[field];
+    const isInTerritory = itemTerritory === territory.name;
+    item.layer.setStyle({
+      opacity: isInTerritory ? 1 : 0.25,
+      weight: isInTerritory ? 6 : 3
+    });
+  });
+
+  if (allCoords.length > 0) {
+    map.fitBounds(L.latLngBounds(allCoords), { padding: [60, 60], maxZoom: 11 });
+  }
+
+  // Construire un stage agrégé (pour le profil altimétrique) avec un score MOYEN
+  const aggStage = buildTerritoryAggregatedStage(territory, field);
+  const aggScore = computeTerritoryAverageScore(territory);
+  showBottomPanel(aggStage, aggScore);
+}
+
+function buildTerritoryAggregatedStage(territory, field) {
+  const allCoords = [];
+  const allSiteTypes = [];
+  let totalDist = 0;
+  let totalPropre = 0;
+
+  territory.stages.forEach((s, i) => {
+    const coords = s.geometry.coordinates;
+    // Éviter les doublons au point de jonction
+    if (i === 0) allCoords.push(...coords);
+    else allCoords.push(...coords.slice(1));
+
+    if (s.properties.siteTypes) {
+      if (i === 0) allSiteTypes.push(...s.properties.siteTypes);
+      else allSiteTypes.push(...s.properties.siteTypes.slice(1));
+    }
+
+    totalDist += s.properties.distance;
+    totalPropre += s.properties.distance * s.properties.pctSitePropre / 100;
+  });
+
+  const pctPropre = totalDist > 0 ? Math.round((totalPropre / totalDist) * 100) : 0;
+  const elev = computeElevationMetrics(allCoords);
+
+  return {
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: allCoords },
+    properties: {
+      index: -1,
+      name: territory.name,
+      distance: Math.round(totalDist * 100) / 100,
+      pctSitePropre: pctPropre,
+      pctSitePartage: 100 - pctPropre,
+      elevationGain: elev.elevationGain,
+      elevationLoss: elev.elevationLoss,
+      reliefScore: elev.reliefScore,
+      numPics: elev.numPics,
+      slopeScore: elev.slopeScore,
+      maxSlope: elev.maxSlope,
+      region: field === 'region' ? territory.name : (territory.stages[0]?.properties.region || ''),
+      departement: field === 'departement' ? territory.name : (territory.stages[0]?.properties.departement || ''),
+      siteTypes: allSiteTypes
+    }
+  };
+}
+
+/**
+ * Calcule le score moyen d'un territoire à partir des scores individuels de ses étapes.
+ * Contrairement à computeStageScore (conçu pour une étape unique), cette fonction
+ * fait la moyenne des scores existants pour éviter l'explosion des scores cumulés.
+ */
+function computeTerritoryAverageScore(territory) {
+  const n = territory.scores.length;
+  if (n === 0) return { total: 0, maxPossible: 0, category: getCategory(0, 0), subScores: {} };
+
+  // Moyenne du score total
+  const avgTotal = territory.scores.reduce((s, sc) => s + sc.total, 0) / n;
+  const avgTotalRounded = Math.round(avgTotal * 10) / 10;
+
+  // Moyenne des sous-scores
+  const subScores = {};
+  const subKeys = Object.keys(territory.scores[0].subScores);
+  for (const key of subKeys) {
+    const ref = territory.scores[0].subScores[key];
+    let sumPoints = 0;
+    let countAvailable = 0;
+    territory.scores.forEach(sc => {
+      if (sc.subScores[key].available) {
+        sumPoints += sc.subScores[key].points;
+        countAvailable++;
+      }
+    });
+    const available = countAvailable > 0;
+    const avgPoints = available ? Math.round((sumPoints / countAvailable) * 10) / 10 : null;
+
+    subScores[key] = {
+      label: ref.label,
+      description: ref.description,
+      points: avgPoints,
+      maxPoints: ref.maxPoints,
+      available
+    };
+  }
+
+  // Moyenne du maxPossible
+  const avgMaxPossible = territory.scores.reduce((s, sc) => s + sc.maxPossible, 0) / n;
+
+  return {
+    total: avgTotalRounded,
+    maxPossible: Math.round(avgMaxPossible * 10) / 10,
+    category: getCategory(Math.round(avgTotal), subScores.securite?.points ?? 0),
+    subScores
+  };
 }

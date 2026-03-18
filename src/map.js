@@ -100,6 +100,7 @@ function displayStages(stagesGeojson, scores) {
     });
 
     line.on('click', () => {
+      territoryNavData = null;
       showBottomPanel(stage, score);
       highlightStageOnMap(stage);
     });
@@ -110,6 +111,7 @@ function displayStages(stagesGeojson, scores) {
 }
 
 function highlightStage(stageIndex, stagesGeojson) {
+  territoryNavData = null;
   const stage = stagesGeojson.features[stageIndex];
   if (!stage) return;
   highlightStageOnMap(stage);
@@ -245,6 +247,16 @@ function showBottomPanel(stage, score) {
 }
 
 function navigateStage(direction) {
+  // Navigation entre territoires
+  if (territoryNavData) {
+    const newIdx = territoryNavData.index + direction;
+    if (newIdx < 0 || newIdx >= territoryNavData.sorted.length) return;
+    territoryNavData.index = newIdx;
+    selectTerritory(territoryNavData.sorted[newIdx], territoryNavData.field);
+    updateNavButtons();
+    return;
+  }
+  // Navigation entre étapes
   if (currentPanelStageIndex === null || !currentStages || !currentScores) return;
   const newIdx = currentPanelStageIndex + direction;
   if (newIdx < 0 || newIdx >= currentStages.features.length) return;
@@ -252,6 +264,11 @@ function navigateStage(direction) {
 }
 
 function updateNavButtons() {
+  if (territoryNavData) {
+    document.getElementById('btn-prev-stage').disabled = territoryNavData.index <= 0;
+    document.getElementById('btn-next-stage').disabled = territoryNavData.index >= territoryNavData.sorted.length - 1;
+    return;
+  }
   const total = currentStages ? currentStages.features.length : 0;
   document.getElementById('btn-prev-stage').disabled = currentPanelStageIndex <= 0;
   document.getElementById('btn-next-stage').disabled = currentPanelStageIndex >= total - 1;
@@ -486,21 +503,25 @@ function drawElevationProfile(stage) {
       }
     }
 
-    // 2. Pour chaque tranche, ne colorier que les segments en montée
+    // 2. Pour chaque tranche, ne colorier que les montées ≥ 10 m de D+ continu
+    const RELIEF_MIN_GAIN = 10; // seuil : 10 m de D+ continu minimum
     for (const tranche of trancheColors) {
       let climbStart = -1;
+      let climbGain = 0;
       for (let i = tranche.startIdx + 1; i <= tranche.endIdx; i++) {
         const diff = points[i].ele - points[i - 1].ele;
         if (diff > 0) {
           if (climbStart < 0) climbStart = i - 1;
+          climbGain += diff;
         } else {
-          if (climbStart >= 0) {
+          if (climbStart >= 0 && climbGain >= RELIEF_MIN_GAIN) {
             drawHighlightSegment(ctx, points, climbStart, i - 1, xPos, yPos, h, padBottom, tranche.color);
-            climbStart = -1;
           }
+          climbStart = -1;
+          climbGain = 0;
         }
       }
-      if (climbStart >= 0) {
+      if (climbStart >= 0 && climbGain >= RELIEF_MIN_GAIN) {
         drawHighlightSegment(ctx, points, climbStart, tranche.endIdx, xPos, yPos, h, padBottom, tranche.color);
       }
     }
@@ -621,6 +642,7 @@ function closeBottomPanel() {
   document.getElementById('bottom-panel').classList.remove('visible');
   document.getElementById('panel-nav').classList.remove('visible');
   currentPanelStageIndex = null;
+  territoryNavData = null;
   highlightLayer.clearLayers();
   // Restaurer l'opacité de tous les tronçons
   stageLayerItems.forEach(item => {

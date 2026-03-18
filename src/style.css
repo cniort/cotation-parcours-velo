@@ -1429,3 +1429,100 @@ main { flex: 1; display: flex; overflow: hidden; position: relative; }
   text-align: center;
 }
 .modal-footer strong { color: var(--text-secondary); }
+
+/* ── Bouton Discussion (header) ── */
+#btn-discussion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--warning);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--warning);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+#btn-discussion:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* ── Modale Discussion ── */
+.discussion-topics h3 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.discussion-topics h3:first-child { margin-top: 12px; }
+
+.discussion-topic {
+  padding: 12px 14px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.topic-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.topic-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tag-securite { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+.tag-relief { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+.tag-pics { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
+.tag-pente { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+.tag-provisoire { background: var(--bg-surface-active); color: var(--text-muted); }
+.tag-methodo { background: rgba(99, 102, 241, 0.10); color: var(--accent-hover); }
+.tag-data { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+
+.topic-current {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  line-height: 1.5;
+}
+.topic-current strong {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.topic-question {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid var(--warning);
+}

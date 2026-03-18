@@ -19,6 +19,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
           Ajouter un itinéraire
         </button>
+        <button id="btn-discussion" onclick="openDiscussionModal()" title="Points de discussion">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          <span>Discussion</span>
+        </button>
         <button id="btn-legend" onclick="openLegendModal()" title="Comprendre la cotation">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
           <span>Cotation</span>
@@ -59,7 +63,7 @@
             <button class="main-toggle-btn" data-panel="departements">Départements</button>
           </div>
 
-          <!-- Sous-toggle étapes (visible si panel = etapes) -->
+          <!-- Sous-toggle mode de découpage (visible sur toutes les vues) -->
           <div id="sub-toggle">
             <button class="view-btn active" data-view="10km">Tranches 10 km</button>
             <button class="view-btn" data-view="touristique">Étapes touristiques</button>
@@ -378,6 +382,183 @@
       <div class="modal-footer">
         <p>Méthodologie : <strong>France Vélo Tourisme</strong> — Actualisation des cotations de difficulté des parcours (V3)</p>
         <p>Développé par <strong>Corentin NIORT</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Points de discussion -->
+  <div id="discussion-modal" class="modal-overlay" onclick="closeDiscussionModal(event)">
+    <div class="modal-content modal-wide" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeDiscussionModal()">&times;</button>
+
+      <h2>Points de discussion</h2>
+      <p class="modal-intro">
+        Recensement des paramètres et choix méthodologiques qui structurent le système de cotation.
+        Ces sujets sont ouverts à discussion avec l'ensemble des partenaires pour affiner et valider la grille.
+      </p>
+
+      <div class="discussion-topics">
+
+        <!-- Catégorie 1 -->
+        <h3>1. Grille de cotation — Seuils de points</h3>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-securite">Sécurité</span>
+            <span class="topic-title">Seuils du pourcentage de site propre</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> &ge;90% = 0 pt &middot; 60-90% = 1 pt &middot; 20-60% = 2 pts &middot; &lt;20% = 3 pts
+          </div>
+          <div class="topic-question">Les seuils de 20%, 60% et 90% sont-ils adaptés à la réalité des itinéraires français ? Un itinéraire avec 65% de site propre et un autre avec 85% reçoivent le même score (1 pt) — est-ce souhaitable ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-relief">Relief</span>
+            <span class="topic-title">Seuils de D+ par tranche de 10 km</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> &le;100m = 0 pt &middot; 100-200m = 1 pt &middot; 200-400m = 2 pts &middot; &gt;400m = 3 pts
+          </div>
+          <div class="topic-question">Le score Relief retient le <strong>maximum</strong> parmi toutes les tranches de 10 km de l'étape. Est-ce représentatif de l'effort global ? Faudrait-il plutôt utiliser la moyenne, ou un percentile (ex : 75e) ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-pics">Pics</span>
+            <span class="topic-title">Seuils du nombre de pics</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> 0-1 = 0 pt &middot; 2-3 = 1 pt &middot; 4-5 = 2 pts &middot; &gt;5 = 3 pts
+          </div>
+          <div class="topic-question">Ces seuils sont-ils pertinents quelle que soit la longueur de l'étape ? Une étape de 50 km avec 4 pics est-elle aussi exigeante qu'une étape de 20 km avec 4 pics ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-pente">Pente</span>
+            <span class="topic-title">Scoring par pic selon la pente maximale</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> 4-8% = +0,25 pt par pic &middot; &gt;8% = +0,5 pt par pic &middot; Score = somme (non plafonné)
+          </div>
+          <div class="topic-question">Le score de pente est la somme des contributions de chaque pic, sans plafond. Sur une longue étape avec de nombreux pics, ce score peut largement dépasser 1 pt (max théorique de l'indicateur). Faut-il plafonner à 1 pt ? Ou ajuster les coefficients ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-provisoire">Provisoire</span>
+            <span class="topic-title">Indicateur non implémenté</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Toujours 0 pt (pas de données disponibles)
+          </div>
+          <div class="topic-question">Comment obtenir la donnée de % provisoire des itinéraires ? Quel format / quelle source ? Cet indicateur doit-il être intégré au GeoJSON source ou déterminé autrement ?</div>
+        </div>
+
+        <!-- Catégorie 2 -->
+        <h3>2. Détection du relief — Définitions</h3>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-relief">Relief</span>
+            <span class="topic-title">Définition d'une montée (pic)</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Pente &gt;4% ET longueur &gt;200 m
+          </div>
+          <div class="topic-question">Le seuil de 4% de pente est-il le bon pour définir le début d'un pic ? Des montées longues et régulières à 3% peuvent être éprouvantes sans être détectées. Et 200 m de longueur minimum — est-ce suffisant ou trop restrictif ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-relief">Relief</span>
+            <span class="topic-title">Seuil de visualisation des montées</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> 10 m de D+ continu minimum pour afficher une montée sur le profil
+          </div>
+          <div class="topic-question">Ce seuil de 10 m filtre le bruit GPS et les micro-ondulations. Est-il trop bas (affiche encore des faux positifs) ou trop haut (masque de petites côtes réelles) ? Ce seuil n'impacte que la visualisation, pas le calcul du score.</div>
+        </div>
+
+        <!-- Catégorie 3 -->
+        <h3>3. Découpage et catégorisation</h3>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-methodo">Méthodologie</span>
+            <span class="topic-title">Longueur des tranches de référence</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> 10 km
+          </div>
+          <div class="topic-question">Le choix de 10 km comme unité de référence est central dans la méthodologie FVT. Pourquoi 10 km et pas 5 ou 15 ? Ce choix impacte fortement le score Relief (D+ par tranche) et la granularité de l'analyse.</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-methodo">Méthodologie</span>
+            <span class="topic-title">Catégories finales et mention Famille</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> 0-2 pts = Je débute &middot; 3-6 pts = J'ai l'habitude &middot; 7+ pts = Aventure &middot; Mention Famille si &le;2 pts ET sécurité &ge;90%
+          </div>
+          <div class="topic-question">Les bornes 2 et 6 sont-elles bien calibrées ? Un score de 3 fait basculer dans "J'ai l'habitude" — est-ce trop sévère ? La mention Famille est-elle suffisamment distinctive ou faudrait-il en faire une catégorie à part ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-methodo">Méthodologie</span>
+            <span class="topic-title">Différences entre les modes 10 km et touristique</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Chaque étape (10 km ou touristique) est scorée individuellement. Les scores diffèrent car la granularité change l'évaluation du relief, des pics et de la pente.
+          </div>
+          <div class="topic-question">Est-il normal/souhaitable que la cotation d'un même territoire varie selon le découpage ? Le mode 10 km donne une lecture technique du terrain, le mode touristique une lecture de l'effort journalier. Faut-il privilégier l'un ou l'autre comme référence officielle ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-methodo">Méthodologie</span>
+            <span class="topic-title">Agrégation des scores par territoire</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Moyenne simple des scores de toutes les étapes du territoire
+          </div>
+          <div class="topic-question">La moyenne simple donne le même poids à chaque étape. Faudrait-il pondérer par la distance (une étape de 48 km pèse plus qu'une de 17 km) ? Ou utiliser un autre indicateur (médiane, % de chaque catégorie) ?</div>
+        </div>
+
+        <!-- Catégorie 4 -->
+        <h3>4. Données et sources</h3>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-data">Données</span>
+            <span class="topic-title">Revêtement — donnée disponible, non exploitée</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Le GeoJSON contient le type de revêtement (Lisse / Rugueux / Meuble) mais cette information n'est pas intégrée au scoring.
+          </div>
+          <div class="topic-question">Le revêtement a un impact direct sur la difficulté perçue (meuble = plus exigeant). Faut-il l'intégrer comme 6e indicateur ? Avec quels seuils ? Ou l'inclure dans un indicateur existant ?</div>
+        </div>
+
+        <div class="discussion-topic">
+          <div class="topic-header">
+            <span class="topic-tag tag-data">Données</span>
+            <span class="topic-title">Précision des données d'altitude GPS</span>
+          </div>
+          <div class="topic-current">
+            <strong>Paramétrage actuel :</strong> Altitude brute du fichier GPX, sans lissage ni correction
+          </div>
+          <div class="topic-question">Les données d'altitude GPS sont intrinsèquement bruitées (&plusmn;5-10 m). Ce bruit gonfle artificiellement le D+ et le nombre de pics détectés. Faut-il appliquer un lissage (moyenne glissante, filtre de Kalman) avant le calcul ? Si oui, avec quelle fenêtre ?</div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <p>Document de travail — <strong>Cotation de la difficulté des parcours vélo</strong></p>
+        <p>Méthodologie : <strong>France Vélo Tourisme</strong> &middot; Développé par <strong>Corentin NIORT</strong></p>
       </div>
     </div>
   </div>
