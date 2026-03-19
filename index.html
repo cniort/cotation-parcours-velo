@@ -426,60 +426,46 @@
 
         <div class="discussion-topic">
           <div class="topic-header">
-            <span class="topic-tag tag-pics">Pics</span>
-            <span class="topic-title">Seuils du nombre de pics</span>
-          </div>
-          <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> 0-1 = 0 pt &middot; 2-3 = 1 pt &middot; 4-5 = 2 pts &middot; &gt;5 = 3 pts
-          </div>
-          <div class="topic-question">Ces seuils sont-ils pertinents quelle que soit la longueur de l'étape ? Une étape de 50 km avec 4 pics est-elle aussi exigeante qu'une étape de 20 km avec 4 pics ?</div>
-        </div>
-
-        <div class="discussion-topic">
-          <div class="topic-header">
-            <span class="topic-tag tag-pente">Pente</span>
-            <span class="topic-title">Scoring par pic selon la pente maximale</span>
-          </div>
-          <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> 4-8% = +0,25 pt par pic &middot; &gt;8% = +0,5 pt par pic &middot; Score = somme (non plafonné)
-          </div>
-          <div class="topic-question">Le score de pente est la somme des contributions de chaque pic, sans plafond. Sur une longue étape avec de nombreux pics, ce score peut largement dépasser 1 pt (max théorique de l'indicateur). Faut-il plafonner à 1 pt ? Ou ajuster les coefficients ?</div>
-        </div>
-
-        <div class="discussion-topic">
-          <div class="topic-header">
             <span class="topic-tag tag-provisoire">Provisoire</span>
-            <span class="topic-title">Indicateur non implémenté</span>
+            <span class="topic-title">Sections provisoires — donnée à intégrer depuis l'ON3V</span>
           </div>
           <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> Toujours 0 pt (pas de données disponibles)
+            <strong>Paramétrage actuel :</strong> Toujours 0 pt — la donnée n'est pas encore présente dans le GeoJSON de la Vélodyssée. La source identifiée est la base de données <strong>ON3V</strong> (Observatoire National des Véloroutes et Voies Vertes) de Vélo &amp; Territoires, actuellement en maintenance. Seuils prévus : 0% = 0 pt &middot; 0,1-20% = 1 pt &middot; 20-50% = 2 pts &middot; &gt;50% = 3 pts.
           </div>
-          <div class="topic-question">Comment obtenir la donnée de % provisoire des itinéraires ? Quel format / quelle source ? Cet indicateur doit-il être intégré au GeoJSON source ou déterminé autrement ?</div>
+          <div class="topic-question">Une fois la base ON3V de nouveau accessible, comment intégrer cette donnée ? Le champ « provisoire » doit-il être ajouté au GeoJSON source (comme le sont déjà « Site » et « revetement ») ? Quel attribut ON3V correspond exactement à la notion de « section provisoire » ? Y a-t-il une distinction à faire entre provisoire (tracé temporaire en attente d'aménagement) et non renseigné ?</div>
         </div>
 
         <!-- Catégorie 2 -->
-        <h3>2. Détection du relief — Définitions</h3>
+        <h3>2. Relief, Pics et Pente — Clarification des 3 indicateurs</h3>
 
         <div class="discussion-topic">
           <div class="topic-header">
-            <span class="topic-tag tag-relief">Relief</span>
-            <span class="topic-title">Définition d'une montée (pic)</span>
+            <span class="topic-tag tag-relief">Relief / Pics / Pente</span>
+            <span class="topic-title">Les 3 indicateurs de relief — définitions, seuils et redondance</span>
           </div>
           <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> Pente &gt;4% ET longueur &gt;200 m
+            <strong>Définitions et paramétrage actuel :</strong><br><br>
+            &bull; <strong>Relief</strong> (0-3 pts) — <em>Volume de montée.</em> D+ cumulé par tranche de 10 km : &le;100m = 0 pt, 100-200m = 1 pt, 200-400m = 2 pts, &gt;400m = 3 pts. Le score retenu est le <strong>max</strong> de toutes les tranches de l'étape.<br><br>
+            &bull; <strong>Pics</strong> (0-3 pts) — <em>Fréquence des côtes.</em> Nombre de montées distinctes détectées (&gt;4% de pente ET &gt;200 m de longueur) : 0-1 = 0 pt, 2-3 = 1 pt, 4-5 = 2 pts, &gt;5 = 3 pts.<br><br>
+            &bull; <strong>Pente</strong> (0-1 pt théorique) — <em>Sévérité des côtes.</em> Score par pic détecté : +0,25 pt si pente max 4-8%, +0,5 pt si &gt;8%. Score = somme de tous les pics, <strong>non plafonné</strong>.
           </div>
-          <div class="topic-question">Le seuil de 4% de pente est-il le bon pour définir le début d'un pic ? Des montées longues et régulières à 3% peuvent être éprouvantes sans être détectées. Et 200 m de longueur minimum — est-ce suffisant ou trop restrictif ?</div>
+          <div class="topic-question">
+            <strong>1. Redondance et triple pénalisation :</strong> ces 3 indicateurs sont intrinsèquement liés — un terrain avec beaucoup de D+ (Relief) aura souvent des pics (Pics) dont les pentes sont élevées (Pente). Y a-t-il un risque de surpondération du relief dans le score total ? Faudrait-il fusionner, ajuster les poids, ou conserver les 3 comme dimensions complémentaires (volume, fréquence, intensité) ?<br><br>
+            <strong>2. Définition d'un pic :</strong> le seuil de 4% de pente et 200 m de longueur minimum sont-ils les bons ? Des montées longues à 3% peuvent être éprouvantes sans être détectées. Ces seuils sont-ils documentés dans la méthodologie FVT ou sont-ils un choix d'implémentation ?<br><br>
+            <strong>3. Seuils de scoring des pics :</strong> les paliers 0-1 / 2-3 / 4-5 / &gt;5 sont-ils pertinents quelle que soit la longueur de l'étape ? 4 pics sur 50 km est-il aussi exigeant que 4 pics sur 20 km ?<br><br>
+            <strong>4. Plafonnement de la pente :</strong> le score de pente est une somme non plafonnée (+0,25 ou +0,5 par pic). Sur une longue étape avec de nombreux pics, il peut largement dépasser 1 pt (max théorique). Faut-il plafonner à 1 pt ou ajuster les coefficients ?
+          </div>
         </div>
 
         <div class="discussion-topic">
           <div class="topic-header">
             <span class="topic-tag tag-relief">Relief</span>
-            <span class="topic-title">Seuil de visualisation des montées</span>
+            <span class="topic-title">Seuil de visualisation des montées sur le profil</span>
           </div>
           <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> 10 m de D+ continu minimum pour afficher une montée sur le profil
+            <strong>Paramétrage actuel :</strong> 10 m de D+ continu minimum pour afficher une montée colorée sur le profil altimétrique. Ce seuil n'impacte que la visualisation, pas le calcul du score.
           </div>
-          <div class="topic-question">Ce seuil de 10 m filtre le bruit GPS et les micro-ondulations. Est-il trop bas (affiche encore des faux positifs) ou trop haut (masque de petites côtes réelles) ? Ce seuil n'impacte que la visualisation, pas le calcul du score.</div>
+          <div class="topic-question">Ce seuil filtre le bruit GPS et les micro-ondulations. Est-il trop bas (faux positifs) ou trop haut (masque de petites côtes réelles) ? Faut-il aligner ce seuil visuel avec les seuils de détection des pics (4%, 200 m) pour plus de cohérence ?</div>
         </div>
 
         <!-- Catégorie 3 -->
@@ -504,7 +490,13 @@
           <div class="topic-current">
             <strong>Paramétrage actuel :</strong> 0-2 pts = Je débute &middot; 3-6 pts = J'ai l'habitude &middot; 7+ pts = Aventure &middot; Mention Famille si &le;2 pts ET sécurité &ge;90%
           </div>
-          <div class="topic-question">Les bornes 2 et 6 sont-elles bien calibrées ? Un score de 3 fait basculer dans "J'ai l'habitude" — est-ce trop sévère ? La mention Famille est-elle suffisamment distinctive ou faudrait-il en faire une catégorie à part ?<br><br><strong>Ambiguïté identifiée :</strong> la présentation FVT V3 affiche "0-2 pts / 2-6 pts / 6 pts et +", ce qui crée un chevauchement aux bornes. Un score de exactement 2 est-il "Je débute" ou "J'ai l'habitude" ? Un score de exactement 6 est-il "J'ai l'habitude" ou "Aventure" ? L'implémentation actuelle place 2 dans "Je débute" (&le;2) et 6 dans "J'ai l'habitude" (&le;6). <strong>&Agrave; clarifier officiellement.</strong></div>
+          <div class="topic-question">
+            <strong>Ambiguïté des bornes :</strong> la présentation FVT V3 affiche "0-2 pts / 2-6 pts / 6 pts et +". Les scores 2 et 6 apparaissent dans deux catégories. Clarification nécessaire :<br><br>
+            &bull; Un score de <strong>exactement 2</strong> est-il "Je débute" ou "J'ai l'habitude" ?<br>
+            &bull; Un score de <strong>exactement 6</strong> est-il "J'ai l'habitude" ou "Aventure" ?<br><br>
+            L'implémentation actuelle : <strong>&le;2 = Je débute</strong>, <strong>3-6 = J'ai l'habitude</strong>, <strong>&ge;7 = Aventure</strong>.<br><br>
+            Les bornes 2 et 6 sont-elles bien calibrées ? La mention Famille (&le;2 pts ET &ge;90% voies cyclables) est-elle suffisamment distinctive ou faudrait-il en faire une catégorie à part entière ?
+          </div>
         </div>
 
         <div class="discussion-topic">
@@ -521,12 +513,16 @@
         <div class="discussion-topic">
           <div class="topic-header">
             <span class="topic-tag tag-methodo">Méthodologie</span>
-            <span class="topic-title">Agrégation des scores par territoire</span>
+            <span class="topic-title">Agrégation des scores par territoire — moyenne, max, ou les deux ?</span>
           </div>
           <div class="topic-current">
-            <strong>Paramétrage actuel :</strong> Moyenne simple des scores de toutes les étapes du territoire
+            <strong>Paramétrage actuel :</strong> Moyenne simple des scores de toutes les étapes du territoire. Complétée par une barre de répartition (% Je débute / J'ai l'habitude / Aventure).
           </div>
-          <div class="topic-question">La moyenne simple donne le même poids à chaque étape. Faudrait-il pondérer par la distance (une étape de 48 km pèse plus qu'une de 17 km) ? Ou utiliser un autre indicateur (médiane, % de chaque catégorie) ?</div>
+          <div class="topic-question">Trois approches possibles, chacune avec ses limites :<br><br>
+            <strong>1. Score moyen</strong> (actuel) : donne une lecture globale, mais masque les tronçons critiques. Un territoire avec 90% de plat et un col très difficile affichera un score rassurant.<br><br>
+            <strong>2. Score maximal</strong> : met en évidence le tronçon le plus exigeant, mais pénalise un territoire dont 95% du parcours est accessible.<br><br>
+            <strong>3. Double affichage (moyenne + max)</strong> : offre une lecture complète — le score moyen pour l'impression générale et le score max pour alerter sur les passages critiques. Plus informatif mais potentiellement plus complexe à lire pour l'utilisateur.<br><br>
+            <strong>&Agrave; trancher :</strong> Quelle approche est la plus utile pour le cyclotouriste qui prépare son voyage ? Faut-il aussi pondérer la moyenne par la distance de chaque étape ?</div>
         </div>
 
         <!-- Catégorie 4 -->
